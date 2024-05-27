@@ -1,0 +1,13 @@
+{
+    "version": "1.0.0",
+    "configurations": [
+        {
+            "name": "Execucao em DEV",
+            "type": "python",
+            "request": "launch",
+            //"program": "${workspaceFolder}\\pipefyUts\\__init__.py"
+            "program": "${workspaceFolder}\\run.py"
+            //"program": "${workspaceFolder}/scheduller.py"
+        }
+    ]
+}

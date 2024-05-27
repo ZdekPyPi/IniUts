@@ -1,0 +1,13 @@
+venv
+output
+__pycache__
+.idea
+*.pyc
+logs
+*.pypirc
+pypirc
+*pypirc
+
+*.env
+env
+*env
