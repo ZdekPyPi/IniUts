@@ -6,6 +6,10 @@
 pip install iniUts
 ```
 
+## GitHub
+https://github.com/ZdekPyPi/IniUts
+
+
 ## Usage
 #
 <!-- //==================================================== -->
