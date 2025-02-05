@@ -14,12 +14,15 @@ ini = IniUts('prd_config.ini','dev_config.ini',in_prd=False)
 
 @ini.link('PERSON')
 class Person():
+    USERNAME: str = envar("USERNAME")
     NAME   : str
     age    : int
     amount : float
     friends: tuple = ','
     dob    : datetime = "%Y-%m-%d"
 
+
+pass
 # pass
 # a = 1
 

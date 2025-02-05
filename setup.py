@@ -10,7 +10,7 @@ classifiers = [
  
 setup(
   name='iniUts',
-  version='1.1.9',
+  version='1.2.0',
   description='Ini file manipulator',
   long_description=open('README.md').read() + '\n\n' + open('CHANGELOG.txt').read(),
   long_description_content_type='text/markdown',

@@ -2,6 +2,23 @@ import configparser as cp
 from dataclasses import dataclass
 from datetime import datetime
 import re
+import os
+
+class envar():
+    def __init__(self,key:str,default:str=None):
+        self.key  = key
+        self.default = default
+    
+    def get_value(self):
+        if self.default != None:
+            return os.getenv(self.key,self.default)
+        else:
+            value = os.getenv(self.key)
+            if not value:
+                raise Exception(f"envar '{self.key}' not found!")
+            return value
+
+    
 
 
 class IniUts():
@@ -112,9 +129,19 @@ class IniUts():
             v = cls(v)
         return v
 
+    def setup_initial_values(self,dtClass):
+        for k in dtClass.__annotations__:
+            if not hasattr(dtClass, k):
+                setattr(dtClass, k, None)
+        return dtClass
+
     def section2DataClass(self,section,dtClass,skip_missing=False,empty_as_null=False):
         dt = self.Section2Dict(section,empty_as_null=empty_as_null)
         dt2 = self.Section2Dict(section,empty_as_null=empty_as_null,fileIni=self.prd_file)
+
+        dtClass = self.setup_initial_values(dtClass)
+
+        #VALIDA AS KEYS NO INI DE DEV
         for k, v in dt.items():
             if not k in dtClass.__annotations__:
                 if not skip_missing:
@@ -122,20 +149,22 @@ class IniUts():
                 else:
                     continue
             v = self.format_data(dtClass,k,v)
-
-            
-
             setattr(dtClass, k, v)
         
+        class_keys = [x for x in dtClass.__annotations__ if getattr(dtClass,x) != envar]
         
-        MissingKeysFromClass = lambda x:list(set(dtClass.__annotations__.keys())  - set(x.keys()))
+        MissingKeysFromClass = lambda x:list(set(class_keys)  - set(x.keys()))
 
         #VERIFICA SE AS KEYS NAO ENCONTRADAS ESTAO NO ARQUIVO DE PRD:
         if not self.in_prd:
             for k in MissingKeysFromClass(dt):
                 if not k in dt2.keys():
+                    if isinstance(getattr(dtClass,k),envar):
+                        v = getattr(dtClass,k).get_value()
+                        setattr(dtClass, k, v)
+                        continue
                     if not skip_missing:
-                        raise Exception(f"Cound not find '{MissingKeysFromClass(dt)}' keys at section '{section}' in ini file")
+                        raise Exception(f"Cound not find '{k}' keys at section '{section}' in ini file")
                     continue
                 v = self.format_data(dtClass,k,dt2[k])
                 setattr(dtClass, k, v)
