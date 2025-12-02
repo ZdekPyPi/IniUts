@@ -7,19 +7,24 @@ from iniUts import *
 load_dotenv()
 
 ini = IniUts('prd_config.ini')
-ini = IniUts('prd_config.ini','dev_config.ini',in_prd=False)
+ini = IniUts('prd_config.ini','dev_config.ini',in_prd=True,encryption_key="asdoajhsdoiuayhsoidhasoidhalijksdhaioshdioaws")
 
 #TODAS AS CHAVES DE DEV DEVE CONTER EM PRD
 
 
 @ini.link('PERSON')
 class Person():
-    USERNAME: str = envar("USERNAME")
+    USERNAME: str = envar("USERNAME","NO_NAME")
     NAME   : str
     age    : int
     amount : float
     friends: tuple = ','
     dob    : datetime = "%Y-%m-%d"
+
+Person.NAME = "Heitor"
+Person.friends = ("friend1","friend2","friend3","friend4")
+Person.save()
+
 
 
 pass

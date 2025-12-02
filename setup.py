@@ -10,7 +10,7 @@ classifiers = [
  
 setup(
   name='iniUts',
-  version='1.2.0',
+  version='1.3.2',
   description='Ini file manipulator',
   long_description=open('README.md').read() + '\n\n' + open('CHANGELOG.txt').read(),
   long_description_content_type='text/markdown',
@@ -21,5 +21,7 @@ setup(
   classifiers=classifiers,
   keywords='iniUts', 
   packages=find_packages(),
-  install_requires=[]
+  install_requires=[
+      'cryptography>=3.4.7',
+  ]
 )

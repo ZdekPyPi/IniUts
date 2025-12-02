@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from datetime import datetime
 import re
 import os
+import types
+from iniUts.secret import decrypt, encrypt
 
 class envar():
     def __init__(self,key:str,default:str=None):
@@ -18,14 +20,46 @@ class envar():
                 raise Exception(f"envar '{self.key}' not found!")
             return value
 
-    
+
+def save(self):
+    ini = self.__INIUTS__
+    types_to_str = [str,int,float,bool]
+    is_str = lambda t: any([t == x for x in types_to_str])
+
+    iniProd = IniUts(ini.prd_file)
+    iniDev = IniUts(ini.dev_file) if ini.dev_file else None
+
+
+    for k,t in self.__annotations__.items():
+        if k in self.__ENVARS__: continue
+
+        if is_str(t):
+            value = str(getattr(self,k))
+        elif t == tuple:
+            value = getattr(self,k)
+            delimiter = ini.delimiters[f"{str(self)}_{k}"]
+            value = delimiter.join(value)
+        elif t == datetime:
+            value = getattr(self,k)
+            dateFormat = ini.dateFormats[f"{str(self)}_{k}"]
+            value = value.strftime(dateFormat)
+
+        if k in self.__CRYPTED_KEYS__:
+            k = "&_" + k
+            value = encrypt(value,ini.encryption_key)
+
+        if not ini.in_prd and k in iniDev.getKeys(self.__SECTION__):
+            iniDev.write(self.__SECTION__,k,value)
+        else:
+            iniProd.write(self.__SECTION__,k,value)
 
 
 class IniUts():
-    def __init__(self,ini_prd,ini_dev=None,in_prd=True):
+    def __init__(self,ini_prd,ini_dev=None,in_prd=True,encryption_key=None):
         self.prd_file = ini_prd
         self.dev_file = ini_dev
         self.in_prd = in_prd
+        self.encryption_key = encryption_key
         self.delimiters = {}
         self.dateFormats = {}
         self.dev_sections = []
@@ -91,6 +125,13 @@ class IniUts():
 
         return [k for k in config[section]]
    
+    def to_dict(self):
+        sections = self.getSections()
+        result = {}
+        for sect in sections:
+            result[sect] = self.Section2Dict(sect)
+        return result
+
     def Section2Dict(self,section,empty_as_null=False,fileIni=None):
         _file = self.dev_file if not self.in_prd and section in self.dev_sections else self.prd_file
         config = cp.RawConfigParser(allow_no_value=True)
@@ -102,6 +143,9 @@ class IniUts():
     
     def format_data(self,dtClass,k,v):
         cls = dtClass.__annotations__[k]
+        if k in dtClass.__CRYPTED_KEYS__:
+            v = decrypt(v,self.encryption_key)
+
         if cls == tuple:
             name =  f"{str(dtClass)}_{k}"
             if not name in self.delimiters:
@@ -141,6 +185,28 @@ class IniUts():
 
         dtClass = self.setup_initial_values(dtClass)
 
+        dtClass.save  = types.MethodType(save, dtClass)
+        dtClass.__SECTION__ = section
+        dtClass.__ENVARS__ = []
+        dtClass.__INIUTS__ = self
+        dtClass.__CRYPTED_KEYS__ = [ x.replace("&_","") for x in dt2 if "&_" in x ]
+        dt2 = { x.replace("&_",""):dt2[x] for x in dt2 }
+        dt = { x.replace("&_",""):dt[x] for x in dt }
+
+        #ENCRIPTA VARIAVEIS INICIAIS
+        for k in dtClass.__CRYPTED_KEYS__:
+            # ENCRIPTA VARIAVEIS INICIAIS NO ARQUIVO DE DEV
+            if k in dt.keys() and dt[k].startswith('&_') and not self.in_prd:
+                dt[k] = encrypt(dt[k].replace('&_',''),self.encryption_key)
+                IniUts(self.dev_file).write(section,"&_" + k,dt[k])
+
+            # ENCRIPTA VARIAVEIS INICIAIS NO ARQUIVO DE PRD
+            if k in dt2.keys() and dt2[k].startswith('&_'):
+                dt2[k] = encrypt(dt2[k].replace('&_',''),self.encryption_key)
+                IniUts(self.prd_file).write(section,"&_" + k,dt2[k])
+
+
+
         #VALIDA AS KEYS NO INI DE DEV
         for k, v in dt.items():
             if not k in dtClass.__annotations__:
@@ -162,6 +228,7 @@ class IniUts():
                     if isinstance(getattr(dtClass,k),envar):
                         v = getattr(dtClass,k).get_value()
                         setattr(dtClass, k, v)
+                        dtClass.__ENVARS__.append(k)
                         continue
                     if not skip_missing:
                         raise Exception(f"Cound not find '{k}' keys at section '{section}' in ini file")
@@ -169,8 +236,14 @@ class IniUts():
                 v = self.format_data(dtClass,k,dt2[k])
                 setattr(dtClass, k, v)
         else:
-            if not skip_missing and MissingKeysFromClass(dt):
-                raise Exception(f"Cound not find '{MissingKeysFromClass(dt)}' keys at section '{section}' in ini file")
+            for k in MissingKeysFromClass(dt):
+                if isinstance(getattr(dtClass,k),envar):
+                    v = getattr(dtClass,k).get_value()
+                    setattr(dtClass, k, v)
+                    dtClass.__ENVARS__.append(k)
+                    continue
+                if not skip_missing and MissingKeysFromClass(dt):
+                    raise Exception(f"Cound not find '{k}' keys at section '{section}' in ini file")
 
     def link(self,section,skip_missing=False,empty_as_null=False):
         def wrap(function):
