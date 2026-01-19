@@ -26,9 +26,6 @@ def save(self):
     types_to_str = [str,int,float,bool]
     is_str = lambda t: any([t == x for x in types_to_str])
 
-    iniProd = IniUts(ini.prd_file)
-    iniDev = IniUts(ini.dev_file) if ini.dev_file else None
-
 
     for k,t in self.__annotations__.items():
         if k in self.__ENVARS__: continue
@@ -48,98 +45,103 @@ def save(self):
             k = "&_" + k
             value = encrypt(value,ini.encryption_key)
 
-        if not ini.in_prd and k in iniDev.getKeys(self.__SECTION__):
-            iniDev.write(self.__SECTION__,k,value)
+        if not ini.in_prd and k in ini.cp_dev.getKeys(self.__SECTION__):
+            ini.cp_dev.write(self.__SECTION__,k,value)
         else:
-            iniProd.write(self.__SECTION__,k,value)
+            ini.cp_prd.write(self.__SECTION__,k,value)
+
+
+class iniCp:
+    config_parser  = None
+
+    def __init__(self,ini_file,encoding=None):
+       self.ini_file = ini_file
+       self.encoding = encoding
+       self.read_ini()
+    
+    def read_ini(self):
+        config = cp.RawConfigParser(allow_no_value=True,comment_prefixes=("##"))
+        config.optionxform = str
+        if self.encoding:
+            with open(self.ini_file, 'r', encoding=self.encoding) as f:
+                config.read_string(f.read())
+        else:
+            config.read(self.ini_file)
+        
+        self.config_parser = config
+    
+    def write(self,section,key,value):
+        if not section in self.config_parser.sections():
+            self.config_parser[section] = {}
+        self.config_parser[section][key] = value
+        self.config_parser.write(open(self.ini_file, 'w',encoding=self.encoding))
+    
+    def read(self,section,key):
+        if not section in self.config_parser.sections():
+            raise Exception("Section not found!")
+        if not key in self.config_parser[section]:
+            raise Exception("Key not found!")
+        return self.config_parser[section][key]
+
+    def getSections(self):
+        return list(self.config_parser.sections())
+
+    def getKeys(self,section):
+        if not section in self.config_parser.sections():
+            raise Exception("Section not found!")
+
+        return list(self.config_parser[section])
+   
+    def section2Dict(self,section):
+        dc =  dict(self.config_parser[section])
+
+        return {x:(y or None) for x,y in dc.items()}
+
+    def __iter__(self):
+        sections = self.getSections()
+        for sect in sections:
+            # Retorna uma tupla (chave, valor) para cada iteração
+            yield sect, self.section2Dict(sect)
+
+
+
 
 
 class IniUts():
-    def __init__(self,ini_prd,ini_dev=None,in_prd=True,encryption_key=None):
-        self.prd_file = ini_prd
-        self.dev_file = ini_dev
-        self.in_prd = in_prd
+    delimiters     = {}
+    dateFormats    = {}
+
+    def __init__(self,ini_prd,ini_dev=None,in_prd=True,encryption_key=None,encoding=None):
+        self.cp_prd       = iniCp(ini_prd,encoding=encoding)
+        self.cp_dev       = iniCp(ini_dev,encoding=encoding) if ini_dev else None
+        self.in_prd         = in_prd
         self.encryption_key = encryption_key
-        self.delimiters = {}
-        self.dateFormats = {}
-        self.dev_sections = []
         self.checkKeys()
+    
+    def refresh(self):
+        self.cp_prd = iniCp(self.cp_prd.ini_file,encoding=self.cp_prd.encoding)
+        self.cp_dev = iniCp(self.cp_dev.ini_file,encoding=self.cp_dev.encoding) if self.cp_dev else None
+
     
     #TODAS AS CHAVES DE DEV DEVE CONTER EM PRD
     def checkKeys(self):
-        if self.dev_file:
+        if self.cp_dev:
             # VALIDA AS SESSOES
-            sections_dev = self.getSections(_file=self.dev_file)
-            sections_prd = self.getSections()
+            sections_dev = self.cp_dev.getSections()
+            sections_prd = self.cp_prd.getSections()
             not_sections_in_prd = set(sections_dev) - set(sections_prd)
             if not_sections_in_prd:
                 raise Exception(f"could not find {not_sections_in_prd} section at production file, dev ini file must contain same sections as in production ini file")
 
             #VALIDA AS CHAVES
             for sect in sections_dev:
-                keys_dev = self.getKeys(sect,_file=self.dev_file)
-                keys_prd = self.getKeys(sect)
+                keys_dev = self.cp_dev.getKeys(sect)
+                keys_prd = self.cp_prd.getKeys(sect)
                 not_keys_in_prd = set(keys_dev) - set(keys_prd)
                 if not_keys_in_prd:
                     raise Exception(f"could not find {not_keys_in_prd} keys in section '{sect}' at production file, dev ini file must contain same sections as in production ini file")
 
-            self.dev_sections = self.getSections(_file=self.dev_file)
 
-    def write(self,section,key,value):
-        _file = self.dev_file if not self.in_prd and section in self.dev_sections else self.prd_file
-        config = cp.RawConfigParser()
-        config.optionxform = str
-        config.read(_file)
-        if not section in config.sections():
-            config[section] = {}
-            config[section][key] = ""
-            config.write(open(_file, 'w'))
-        config[section][key] = value
-        config.write(open(_file, 'w'))
-    
-    def read(self,section,key):
-        _file = self.dev_file if not self.in_prd and section in self.dev_sections else self.prd_file
-        config = cp.RawConfigParser()
-        config.optionxform = str
-        config.read(_file)
-        if not section in config.sections():
-            raise Exception("Section not found!")
-        if not key in config[section]:
-            raise Exception("Key not found!")
-        return config[section][key]
-
-    def getSections(self,_file=None):
-        _file = _file if _file else self.prd_file
-        config = cp.RawConfigParser()
-        config.optionxform = str
-        config.read(_file)
-        return [k for k in config.sections()]
-
-    def getKeys(self,section,_file=None):
-        _file = _file if _file else self.prd_file
-        config = cp.RawConfigParser()
-        config.optionxform = str
-        config.read(_file)
-        if not section in config.sections():
-            raise Exception("Section not found!")
-
-        return [k for k in config[section]]
-   
-    def to_dict(self):
-        sections = self.getSections()
-        result = {}
-        for sect in sections:
-            result[sect] = self.Section2Dict(sect)
-        return result
-
-    def Section2Dict(self,section,empty_as_null=False,fileIni=None):
-        _file = self.dev_file if not self.in_prd and section in self.dev_sections else self.prd_file
-        config = cp.RawConfigParser(allow_no_value=True)
-        config.optionxform = str
-        config.read(fileIni if fileIni else _file)
-
-        dc = dict(config[section])
-        return dc if not empty_as_null else {x:(y or None) for x,y in dc.items()}
     
     def format_data(self,dtClass,k,v):
         cls = dtClass.__annotations__[k]
@@ -150,7 +152,7 @@ class IniUts():
             name =  f"{str(dtClass)}_{k}"
             if not name in self.delimiters:
                 isFormatDefined = k in [x for x in dir(dtClass) if not re.search("__.*__", x)]
-                delimiter = getattr(dtClass,k) if isFormatDefined else ','
+                delimiter = getattr(dtClass,k) or ',' if isFormatDefined else ','
                 self.delimiters[name]=delimiter
                 a = 2
 
@@ -173,89 +175,60 @@ class IniUts():
             v = cls(v)
         return v
 
+    #COLOCA TODOS COMO NONE INICIALMENTE
     def setup_initial_values(self,dtClass):
         for k in dtClass.__annotations__:
             if not hasattr(dtClass, k):
                 setattr(dtClass, k, None)
         return dtClass
 
-    def section2DataClass(self,section,dtClass,skip_missing=False,empty_as_null=False):
-        dt = self.Section2Dict(section,empty_as_null=empty_as_null)
-        dt2 = self.Section2Dict(section,empty_as_null=empty_as_null,fileIni=self.prd_file)
 
+    def section2DataClass(self,section,dtClass,skip_missing=False,empty_as_null=False):
         dtClass = self.setup_initial_values(dtClass)
 
         dtClass.save  = types.MethodType(save, dtClass)
         dtClass.__SECTION__ = section
-        dtClass.__ENVARS__ = []
+        dtClass.__ENVARS__ = [x for x in dtClass.__annotations__ if isinstance(getattr(dtClass,x),envar)]
         dtClass.__INIUTS__ = self
-        dtClass.__CRYPTED_KEYS__ = [ x.replace("&_","") for x in dt2 if "&_" in x ]
-        dt2 = { x.replace("&_",""):dt2[x] for x in dt2 }
-        dt = { x.replace("&_",""):dt[x] for x in dt }
-
+        dtClass.__CRYPTED_KEYS__ = [ x.replace("&_","") for x in self.cp_prd.getKeys(section) if "&_" in x ]
+        dict_prd = { k.replace("&_",""):v for k,v in self.cp_prd.section2Dict(section).items() }
+        dict_dev =  { k.replace("&_",""):v for k,v in self.cp_dev.section2Dict(section).items() } if self.cp_dev and section in self.cp_dev.getSections() else {}
         #ENCRIPTA VARIAVEIS INICIAIS
         for k in dtClass.__CRYPTED_KEYS__:
             # ENCRIPTA VARIAVEIS INICIAIS NO ARQUIVO DE DEV
-            if k in dt.keys() and dt[k].startswith('&_') and not self.in_prd:
-                dt[k] = encrypt(dt[k].replace('&_',''),self.encryption_key)
-                IniUts(self.dev_file).write(section,"&_" + k,dt[k])
+            if self.cp_dev:
+                if k in dict_dev.keys() and dict_dev[k] and dict_dev[k].startswith('&_'):
+                    cripted_value = encrypt(dict_dev[k].replace('&_',''),self.encryption_key)
+                    dict_dev[k] = cripted_value
+                    self.cp_dev.write(section,"&_" + k,cripted_value)
 
             # ENCRIPTA VARIAVEIS INICIAIS NO ARQUIVO DE PRD
-            if k in dt2.keys() and dt2[k].startswith('&_'):
-                dt2[k] = encrypt(dt2[k].replace('&_',''),self.encryption_key)
-                IniUts(self.prd_file).write(section,"&_" + k,dt2[k])
-
-
-
-        #VALIDA AS KEYS NO INI DE DEV
-        for k, v in dt.items():
-            if not k in dtClass.__annotations__:
-                if not skip_missing:
-                    raise Exception(f"please create the key '{k}' in data class object")
+            if k in dict_prd.keys() and dict_prd[k] and dict_prd[k].startswith('&_'):
+                cripted_value = encrypt(dict_prd[k].replace('&_',''),self.encryption_key)
+                dict_prd[k] = cripted_value
+                self.cp_prd.write(section,"&_" + k,cripted_value)
+                
+        for key in dtClass.__annotations__:
+            if key in dtClass.__ENVARS__:
+                v = getattr(dtClass,key).get_value()
+                v = self.format_data(dtClass,key,v)
+                setattr(dtClass, key, v)
+                continue
+            if key in dict_prd.keys():
+                if key in dict_dev.keys() and not self.in_prd:
+                    v = dict_dev.get(key)
                 else:
-                    continue
-            v = self.format_data(dtClass,k,v)
-            setattr(dtClass, k, v)
-        
-        class_keys = [x for x in dtClass.__annotations__ if getattr(dtClass,x) != envar]
-        
-        MissingKeysFromClass = lambda x:list(set(class_keys)  - set(x.keys()))
-
-        #VERIFICA SE AS KEYS NAO ENCONTRADAS ESTAO NO ARQUIVO DE PRD:
-        if not self.in_prd:
-            for k in MissingKeysFromClass(dt):
-                if not k in dt2.keys():
-                    if isinstance(getattr(dtClass,k),envar):
-                        v = getattr(dtClass,k).get_value()
-                        setattr(dtClass, k, v)
-                        dtClass.__ENVARS__.append(k)
-                        continue
-                    if not skip_missing:
-                        raise Exception(f"Cound not find '{k}' keys at section '{section}' in ini file")
-                    continue
-                v = self.format_data(dtClass,k,dt2[k])
-                setattr(dtClass, k, v)
-        else:
-            for k in MissingKeysFromClass(dt):
-                if isinstance(getattr(dtClass,k),envar):
-                    v = getattr(dtClass,k).get_value()
-                    setattr(dtClass, k, v)
-                    dtClass.__ENVARS__.append(k)
-                    continue
-                if not skip_missing and MissingKeysFromClass(dt):
-                    raise Exception(f"Cound not find '{k}' keys at section '{section}' in ini file")
+                    v = dict_prd.get(key)
+                v = self.format_data(dtClass,key,v)
+                setattr(dtClass, key, v)
+                continue
+            raise Exception(f"Cound not find '{key}' key at section '{section}' in ini file")
 
     def link(self,section,skip_missing=False,empty_as_null=False):
         def wrap(function):
             self.section2DataClass(section,function,skip_missing,empty_as_null)
             return function
         return wrap
-
-
-
-
-
-
 
 
 
