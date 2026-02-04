@@ -154,6 +154,47 @@ datetime.datetime(1991, 12, 2, 0, 0)
 
 ```
 
+# ENCRYPTION
+
+<!-- //==================================================== -->
+## Using Encryption
+##### test.ini file
+```ini
+[CREDENTIALS]
+username = myuser
+&_password = &_mypassword123
+&_api_key  = &_secret_api_key_12345
+```
+##### python code
+```py
+from iniUts import IniUts
+
+# Initialize with encryption key
+ini = IniUts('test.ini', encryption_key="my_secure_encryption_key_32_chars")
+
+@ini.link('CREDENTIALS')
+class Credentials():
+    username: str
+    password: str
+    api_key : str
+
+print(Credentials.username)
+print(Credentials.password)
+print(Credentials.api_key)
+
+# Save encrypted values back to file
+Credentials.password = "new_secure_password"
+Credentials.save()
+```
+##### output
+```py
+myuser
+mypassword123
+secret_api_key_12345
+```
+
+**Note:** When using encryption, the values in the INI file will be encrypted. The encryption key must be provided every time you read or write to the file.
+
 # ENVIORNMENT CHANGING
 
 <!-- //==================================================== -->
@@ -184,9 +225,10 @@ path    = <another_path>
 
 ##### python code
 ```py
-from iniUts import IniUts
+from iniUts import IniUts,envar
 from datetime import datetime
 from dataclasses import dataclass
+
 
 ini = IniUts('prd.ini','dev.ini',in_prd=True) #CHANGE S WILL BE MADE IF IN DEVELOPMENT MODE
 
@@ -197,6 +239,7 @@ class Person():
     amount : float
     friends: tuple = ','
     dob    : datetime = "%Y-%m-%d"
+    mode   : envar(key='MODE',default='DEV')
 
 @ini.link('CONFIG')
 class Config():
@@ -224,6 +267,7 @@ myOtherName
 <some_path>
 
 ```
+
 
 
 

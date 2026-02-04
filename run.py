@@ -1,13 +1,12 @@
 #TEST FILE
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import sys
 import os
 sys.path.append("./iniUts")
 from iniUts import *
-load_dotenv()
+# load_dotenv()
 
-ini = IniUts('prd_config.ini')
-ini = IniUts('prd_config.ini','dev_config.ini',in_prd=True,encryption_key="asdoajhsdoiuayhsoidhasoidhalijksdhaioshdioaws")
+ini = IniUts('prd_config.ini','dev_config.ini',in_prd=True,encryption_key="asdoajhsdoiuayhsoidhasoidhalijksdhaioshdioaws",encoding="utf-8")
 
 #TODAS AS CHAVES DE DEV DEVE CONTER EM PRD
 
@@ -16,6 +15,7 @@ ini = IniUts('prd_config.ini','dev_config.ini',in_prd=True,encryption_key="asdoa
 class Person():
     USERNAME: str = envar("USERNAME","NO_NAME")
     NAME   : str
+    test   : str
     age    : int
     amount : float
     friends: tuple = ','
