@@ -1,13 +1,14 @@
 import configparser as cp
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 import re
 import os
 import types
 from iniUts.secret import decrypt, encrypt
 
 class envar():
-    def __init__(self,key:str,default:str=None):
+    def __init__(self,key:str,default:Optional[str] = None):
         self.key  = key
         self.default = default
     
@@ -52,7 +53,7 @@ def save(self):
 
 
 class iniCp:
-    config_parser  = None
+    config_parser = None
 
     def __init__(self,ini_file,encoding=None):
        self.ini_file = ini_file
@@ -60,7 +61,7 @@ class iniCp:
        self.read_ini()
     
     def read_ini(self):
-        config = cp.RawConfigParser(allow_no_value=True,comment_prefixes=("##"))
+        config = cp.RawConfigParser(allow_no_value=True,comment_prefixes=("##",";","#"))
         config.optionxform = str
         if self.encoding:
             with open(self.ini_file, 'r', encoding=self.encoding) as f:
