@@ -117,12 +117,11 @@ class IniUts():
         self.in_prd         = in_prd
         self.encryption_key = encryption_key
         self.checkKeys()
-    
+
     def refresh(self):
         self.cp_prd = iniCp(self.cp_prd.ini_file,encoding=self.cp_prd.encoding)
         self.cp_dev = iniCp(self.cp_dev.ini_file,encoding=self.cp_dev.encoding) if self.cp_dev else None
-
-    
+        
     #TODAS AS CHAVES DE DEV DEVE CONTER EM PRD
     def checkKeys(self):
         if self.cp_dev:
@@ -172,7 +171,7 @@ class IniUts():
             v = False if val in ['false','','0','n'] else True
 
         else:
-            v = cls(v)
+            v = cls(v) if v else None
         return v
 
     #COLOCA TODOS COMO NONE INICIALMENTE
@@ -192,7 +191,8 @@ class IniUts():
         dtClass.__INIUTS__ = self
         dtClass.__CRYPTED_KEYS__ = [ x.replace("&_","") for x in self.cp_prd.getKeys(section) if "&_" in x ]
         dict_prd = { k.replace("&_",""):v for k,v in self.cp_prd.section2Dict(section).items() }
-        dict_dev =  { k.replace("&_",""):v for k,v in self.cp_dev.section2Dict(section).items() } if self.cp_dev and section in self.cp_dev.getSections() else {}
+        dict_dev = { k.replace("&_",""):v for k,v in self.cp_dev.section2Dict(section).items() } if self.cp_dev and section in self.cp_dev.getSections() else {}
+
         #ENCRIPTA VARIAVEIS INICIAIS
         for k in dtClass.__CRYPTED_KEYS__:
             # ENCRIPTA VARIAVEIS INICIAIS NO ARQUIVO DE DEV
