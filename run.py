@@ -25,7 +25,8 @@ Person.NAME = "Heitor"
 Person.friends = ("friend1","friend2","friend3","friend4")
 Person.save()
 
-
+ini = IniUts('prd_config.ini',encoding='UTF-8')
+print (ini.cp_prd.read('PERSON','age'))
 
 pass
 # pass
