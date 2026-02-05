@@ -11,6 +11,8 @@ class IniUts:
     def __init__(
         self, ini_prd, ini_dev=None, in_prd=True, encryption_key=None, encoding=None
     ):
+        self.delimiters = {}
+        self.dateFormats = {}
         self.cp_prd = IniCp(ini_prd, encoding=encoding)
         self.cp_dev = IniCp(ini_dev, encoding=encoding) if ini_dev else None
         self.in_prd = in_prd

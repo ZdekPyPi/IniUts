@@ -28,9 +28,9 @@ dob     = 1991-12-23
 from iniUts import IniUts
 
 ini = IniUts('test.ini')
-data = ini.read('Person','name')
+p_name = ini.cp_prd.read('Person','name')
 
-print(result)
+print(p_name)
 ```
 ##### output
 ```py
@@ -49,14 +49,8 @@ name    = myname
 from iniUts import IniUts
 
 ini = IniUts('test.ini')
-ini.write('PERSON','last_name','mylastname')
+ini.cp_prd.write('PERSON','last_name','mylastname')
 
-```
-##### test.ini file
-```ini
-[PERSON]
-name      = myname
-last_name = mylastname
 ```
 <!-- //==================================================== -->
 ## getKeys
@@ -71,7 +65,7 @@ last_name = mylastname
 from iniUts import IniUts
 
 ini = IniUts('test.ini')
-keys = ini.getKeys("PERSON")
+keys = ini.cp_prd.getKeys("PERSON")
 print(keys)
 ```
 ##### output
@@ -95,7 +89,7 @@ dob     = 1991-12-23
 from iniUts import IniUts
 
 ini = IniUts('test.ini')
-ini.Section2Dict('PERSON')
+ini.cp_prd.section2Dict('PERSON')
 print(Person)
 
 ```
