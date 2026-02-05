@@ -14,3 +14,4 @@ env
 dist/
 .vscode
 .mypy_cache/
+*.egg-info/
