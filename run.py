@@ -1,10 +1,10 @@
 # TEST FILE
 # from dotenv import load_dotenv
 import sys
-import os
 
 sys.path.append("./iniUts")
-from iniUts import *
+from iniUts import IniUts, Envar
+from datetime import datetime
 
 # load_dotenv()
 
@@ -21,7 +21,7 @@ ini = IniUts(
 
 @ini.link("PERSON")
 class Person:
-    USERNAME: str = envar("USERNAME", "NO_NAME")
+    USERNAME: str = Envar("USERNAME", "NO_NAME")
     NAME: str
     test: str
     age: int

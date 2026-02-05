@@ -1,4 +1,5 @@
 from typing import Optional
+import os
 
 
 class Envar:
@@ -7,7 +8,7 @@ class Envar:
         self.default = default
 
     def get_value(self):
-        if self.default != None:
+        if self.default is not None:
             return os.getenv(self.key, self.default)
         else:
             value = os.getenv(self.key)
