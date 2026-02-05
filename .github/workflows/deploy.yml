@@ -3,8 +3,6 @@ name: Deploy to PyPI
 on:
   push:
     branches: [ main, master ] # Roda sempre que houver push ou merge na main
-  pull_request:
-    branches: [ main, master ]
 
 jobs:
   build-n-publish:
