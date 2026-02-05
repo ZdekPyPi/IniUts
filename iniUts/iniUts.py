@@ -1,9 +1,5 @@
-import configparser as cp
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 import re
-import os
 import types
 from iniUts.secret import decrypt, encrypt
 from iniUts.config_parser_ini import IniCp
@@ -16,15 +12,15 @@ class IniUts:
         self, ini_prd, ini_dev=None, in_prd=True, encryption_key=None, encoding=None
     ):
         self.cp_prd = IniCp(ini_prd, encoding=encoding)
-        self.cp_dev = iniCp(ini_dev, encoding=encoding) if ini_dev else None
+        self.cp_dev = IniCp(ini_dev, encoding=encoding) if ini_dev else None
         self.in_prd = in_prd
         self.encryption_key = encryption_key
         self.checkKeys()
 
     def refresh(self):
-        self.cp_prd = iniCp(self.cp_prd.ini_file, encoding=self.cp_prd.encoding)
+        self.cp_prd = IniCp(self.cp_prd.ini_file, encoding=self.cp_prd.encoding)
         self.cp_dev = (
-            iniCp(self.cp_dev.ini_file, encoding=self.cp_dev.encoding)
+            IniCp(self.cp_dev.ini_file, encoding=self.cp_dev.encoding)
             if self.cp_dev
             else None
         )
@@ -58,24 +54,22 @@ class IniUts:
 
         if cls == tuple:
             name = f"{str(dtClass)}_{k}"
-            if not name in self.delimiters:
+            if name not in self.delimiters:
                 isFormatDefined = k in [
                     x for x in dir(dtClass) if not re.search("__.*__", x)
                 ]
                 delimiter = getattr(dtClass, k) or "," if isFormatDefined else ","
                 self.delimiters[name] = delimiter
-                a = 2
 
             v = tuple(v.split(self.delimiters[name]))
         elif cls == datetime:
             name = f"{str(dtClass)}_{k}"
-            if not name in self.dateFormats:
+            if name not in self.dateFormats:
                 isFormatDefined = k in [
                     x for x in dir(dtClass) if not re.search("__.*__", x)
                 ]
                 delimiter = getattr(dtClass, k) if isFormatDefined else "%Y-%m-%d"
                 self.dateFormats[name] = delimiter
-                a = 2
 
             v = datetime.strptime(v, self.dateFormats[name])
         elif cls == bool:

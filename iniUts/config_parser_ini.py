@@ -22,15 +22,15 @@ class IniCp:
         self.config_parser = config
 
     def write(self, section, key, value):
-        if not section in self.config_parser.sections():
+        if section not in self.config_parser.sections():
             self.config_parser[section] = {}
         self.config_parser[section][key] = value
         self.config_parser.write(open(self.ini_file, "w", encoding=self.encoding))
 
     def read(self, section, key):
-        if not section in self.config_parser.sections():
+        if section not in self.config_parser.sections():
             raise Exception("Section not found!")
-        if not key in self.config_parser[section]:
+        if key not in self.config_parser[section]:
             raise Exception("Key not found!")
         return self.config_parser[section][key]
 
@@ -38,7 +38,7 @@ class IniCp:
         return list(self.config_parser.sections())
 
     def getKeys(self, section):
-        if not section in self.config_parser.sections():
+        if section not in self.config_parser.sections():
             raise Exception("Section not found!")
 
         return list(self.config_parser[section])
