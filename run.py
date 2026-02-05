@@ -1,31 +1,41 @@
-#TEST FILE
+# TEST FILE
 # from dotenv import load_dotenv
 import sys
-import os
+
 sys.path.append("./iniUts")
-from iniUts import *
+from iniUts import IniUts, Envar
+from datetime import datetime
+
 # load_dotenv()
 
-ini = IniUts('prd_config.ini','dev_config.ini',in_prd=True,encryption_key="asdoajhsdoiuayhsoidhasoidhalijksdhaioshdioaws",encoding="utf-8")
+ini = IniUts(
+    "prd_config.ini",
+    "dev_config.ini",
+    in_prd=True,
+    encryption_key="asdoajhsdoiuayhsoidhasoidhalijksdhaioshdioaws",
+    encoding="utf-8",
+)
 
-#TODAS AS CHAVES DE DEV DEVE CONTER EM PRD
+# TODAS AS CHAVES DE DEV DEVE CONTER EM PRD
 
 
-@ini.link('PERSON')
-class Person():
-    USERNAME: str = envar("USERNAME","NO_NAME")
-    NAME   : str
-    test   : str
-    age    : int
-    amount : float
-    friends: tuple = ','
-    dob    : datetime = "%Y-%m-%d"
+@ini.link("PERSON")
+class Person:
+    USERNAME: str = Envar("USERNAME", "NO_NAME")
+    NAME: str
+    test: str
+    age: int
+    amount: float
+    friends: tuple = ","
+    dob: datetime = "%Y-%m-%d"
+
 
 Person.NAME = "Heitor"
-Person.friends = ("friend1","friend2","friend3","friend4")
+Person.friends = ("friend1", "friend2", "friend3", "friend4")
 Person.save()
 
-
+ini = IniUts("prd_config.ini", encoding="UTF-8")
+print(ini.cp_prd.read("PERSON", "age"))
 
 pass
 # pass
@@ -39,24 +49,24 @@ pass
 # class IPS2():
 #    ip5   : str
 
-#import os
-#os.system("cls")
+# import os
+# os.system("cls")
 
-#os.environ['ENV'] = 'PRD'
+# os.environ['ENV'] = 'PRD'
 
-#ini = IniUts('prd_config.ini')
-#ini = IniUts('prd_config.ini','dev_config.ini',in_prd=False)
-#ini.section2DataClass('PERSON',Person)
-#ini.section2DataClass('IPS',IPS)
-#ini.section2DataClass('IPS2',IPS2)
-#print(IPS2.ip5)
+# ini = IniUts('prd_config.ini')
+# ini = IniUts('prd_config.ini','dev_config.ini',in_prd=False)
+# ini.section2DataClass('PERSON',Person)
+# ini.section2DataClass('IPS',IPS)
+# ini.section2DataClass('IPS2',IPS2)
+# print(IPS2.ip5)
 
-#a  =1
+# a  =1
 
-#print(ini.read("PERSON","NAME"))
+# print(ini.read("PERSON","NAME"))
 # ini.Section2Dict('IPS2')
 # # ini.section2DataClass('PERSON',Person)
 # # ini.section2DataClass('PERSON',Person)
 # # print(Person.NAME)
 
-#a  =1
+# a  =1
